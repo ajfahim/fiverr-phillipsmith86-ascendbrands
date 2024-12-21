@@ -2,6 +2,7 @@
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import express from 'express';
 import globalErrorHandler from './src/middlewares/globalErrorHandler.js';
 import router from './src/routes/index.js';
 
@@ -9,8 +10,8 @@ import router from './src/routes/index.js';
 dotenv.config();
 
 // Initialize Express app
+const app = express();
 
-const cors = require('cors');
 app.use(
   cors({
     origin: '*', // Replace '*' with your WordPress site URL if needed
