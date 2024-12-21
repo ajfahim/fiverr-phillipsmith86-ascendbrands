@@ -14,7 +14,7 @@ const app = express();
 
 app.use(
   cors({
-    origin: '*', // Replace '*' with your WordPress site URL if needed
+    origin: 'https://ascendbrands.co.uk', // Replace '*' with your WordPress site URL if needed
     methods: ['POST'],
   }),
 );
