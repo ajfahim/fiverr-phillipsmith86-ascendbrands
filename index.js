@@ -14,11 +14,12 @@ const app = express();
 
 app.use(
   cors({
-    origin: 'https://ascendbrands.co.uk', // Replace '*' with your WordPress site URL if needed
+    origin: '*', // Replace '*' with your WordPress site URL if needed
     methods: ['POST'],
   }),
 );
-// app.use(cors());
+
+app.use(cors());
 // app.use(cors(['http://localhost:3000', 'https://areoforge.com']));
 // Middleware
 app.use(bodyParser.json()); // For parsing application/json
