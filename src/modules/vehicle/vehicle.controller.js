@@ -86,8 +86,17 @@ const postVehicleInformation = async (req, res) => {
 
 const downloadExcelFile = async (req, res) => {
   try {
+    //get password from query params
+
+    const password = req.query.password;
+    if (password !== process.env.EXCEL_PASSWORD) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'Unauthorized',
+      });
+    }
+
     const filePath = path.join(path.resolve(), 'vehicle-info.xlsx'); // Path where the Excel file is saved
-    console.log('🚀 ~ downloadExcelFile ~ filePath:', filePath);
 
     // Check if the file exists
     if (fs.existsSync(filePath)) {
