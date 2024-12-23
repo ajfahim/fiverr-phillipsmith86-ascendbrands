@@ -1,5 +1,7 @@
 import axios from 'axios';
-import { createOrUpdateExcelFile } from '../../utils/update-excel-onedrive.js';
+import fs from 'fs';
+import path from 'path';
+import { createOrUpdateExcelFile } from '../../utils/save-excel-file-to-filesystem.js';
 
 const postVehicleInformation = async (req, res) => {
   try {
@@ -69,15 +71,6 @@ const postVehicleInformation = async (req, res) => {
     // Create or update the Excel file with the new vehicle information
     createOrUpdateExcelFile(filePath, vehicleInformation);
 
-    // const accessToken = await getAccessToken();
-    // const filesAndFolders = await listFilesAndFolders(accessToken);
-    // console.log(
-    //   '🚀 ~ postVehicleInformation ~ filesAndFolders:',
-    //   filesAndFolders,
-    // );
-    // const fileId = await getExcelFileId(accessToken);
-    // await insertDataIntoExcel(fileId, accessToken, vehicleInformation);
-
     return res.status(200).json({
       status: 'success',
       data: vehicleInformation,
@@ -91,6 +84,39 @@ const postVehicleInformation = async (req, res) => {
   }
 };
 
+const downloadExcelFile = async (req, res) => {
+  try {
+    const filePath = path.join(path.resolve(), 'vehicle-info.xlsx'); // Path where the Excel file is saved
+    console.log('🚀 ~ downloadExcelFile ~ filePath:', filePath);
+
+    // Check if the file exists
+    if (fs.existsSync(filePath)) {
+      // Set appropriate headers for file download
+      res.download(filePath, 'vehicle-info.xlsx', (err) => {
+        if (err) {
+          console.error('Error during file download:', err);
+          res.status(500).json({
+            status: 'error',
+            message: 'Failed to download the file.',
+          });
+        }
+      });
+    } else {
+      res.status(404).json({
+        status: 'error',
+        message: 'File not found',
+      });
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to handle file download',
+    });
+  }
+};
+
 export const VehicleInformationController = {
   postVehicleInformation,
+  downloadExcelFile,
 };
