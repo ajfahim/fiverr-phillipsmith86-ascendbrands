@@ -1,95 +1,61 @@
-import { ConfidentialClientApplication } from '@azure/msal-node';
-import axios from 'axios';
-import dotenv from 'dotenv';
+// utils/update-excel-onedrive.js
+import fs from 'fs';
+import XLSX from 'xlsx';
 
-dotenv.config();
+// Function to create or update the Excel file on the server
+export const createOrUpdateExcelFile = (filePath, vehicleInformation) => {
+  let workbook;
 
-const msalConfig = {
-  auth: {
-    clientId: process.env.Azure_Client_ID,
-    clientSecret: process.env.Azure_Client_Secret,
-    authority: `https://login.microsoftonline.com/${process.env.Azure_TENANT_ID}`,
-  },
-};
-
-const cca = new ConfidentialClientApplication(msalConfig);
-
-// Function to get access token from Microsoft Graph
-const getAccessToken = async () => {
-  try {
-    const tokenResponse = await cca.acquireTokenByClientCredential({
-      scopes: ['https://graph.microsoft.com/.default'],
-    });
-    return tokenResponse.accessToken;
-  } catch (error) {
-    console.error('Error getting access token:', error);
-    throw new Error('Unable to get access token');
-  }
-};
-
-// Function to get file ID of the Excel file in OneDrive
-const getExcelFileId = async () => {
-  try {
-    const accessToken = await getAccessToken();
-    const folderPath = '/Fiverr'; // The folder where your file is located
-    const fileName = 'vehicle-info.xlsx'; // The exact name of the file
-
-    const url = `https://graph.microsoft.com/v1.0/me/drive/root:${folderPath}/${fileName}:/`;
-
-    const response = await axios.get(url, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-
-    const file = response.data;
-    console.log('🚀 ~ getExcelFileId ~ file:', file);
-    return file.id;
-  } catch (error) {
-    console.error('Error retrieving file from OneDrive:', error);
-    throw new Error('Failed to retrieve file from OneDrive');
-  }
-};
-
-// Function to insert data into the Excel file on OneDrive
-const insertDataIntoExcel = async (fileId, accessToken, vehicleInformation) => {
-  try {
-    const worksheetId = 'sheet1'; // The worksheet you want to target (adjust as necessary)
-
-    const data = [
+  // Check if file exists, and read it if it does
+  if (fs.existsSync(filePath)) {
+    workbook = XLSX.readFile(filePath); // Read the existing file
+  } else {
+    // If the file does not exist, create a new workbook and add a sheet with headers
+    workbook = XLSX.utils.book_new();
+    workbook.SheetNames.push('Sheet1');
+    workbook.Sheets['Sheet1'] = XLSX.utils.aoa_to_sheet([
       [
-        vehicleInformation.vehicleRegistrationMark,
-        vehicleInformation.dvlaManufacturerDesc,
-        vehicleInformation.dvlaModelDesc,
-        vehicleInformation.manufacturedYear,
-        vehicleInformation.priorNiVrm,
-        vehicleInformation.priorColourDVLA,
-        vehicleInformation.originalColour,
-        vehicleInformation.vehicleIdentificationNumber,
-        vehicleInformation.paintName,
-        vehicleInformation.paintCode,
-        vehicleInformation.interior,
-        vehicleInformation.interiorCode,
+        'Vehicle Registration Number',
+        'VIN Number',
+        'Manufacturer',
+        'Model',
+        'Year of Manufacture',
+        'Prior VRM',
+        'Prior Colour – DVLA',
+        'Original Colour - DVLA',
+        'Paint Name',
+        'Paint Code',
+        'Interior',
+        'Interior Code',
       ],
-    ];
-
-    await axios.post(
-      `https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets/${worksheetId}/range(address='A1')/insert`,
-      {
-        values: data,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-      },
-    );
-    console.log('Data successfully inserted into Excel');
-  } catch (error) {
-    console.error('Error inserting data into Excel:', error);
-    throw new Error('Unable to insert data into Excel');
+    ]); // Add headers
   }
-};
 
-export { getAccessToken, getExcelFileId, insertDataIntoExcel };
+  // Get the first sheet
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+
+  // Get the current row count and add the new row
+  const rowCount = XLSX.utils.sheet_to_json(sheet).length + 1; // Add 1 to get the next row number
+
+  // Format the data to match the Excel columns
+  const newRow = [
+    vehicleInformation.vehicleRegistrationMark,
+    vehicleInformation.vehicleIdentificationNumber,
+    vehicleInformation.dvlaManufacturerDesc,
+    vehicleInformation.dvlaModelDesc,
+    vehicleInformation.manufacturedYear,
+    vehicleInformation.priorNiVrm,
+    vehicleInformation.priorColourDVLA,
+    vehicleInformation.originalColour,
+    vehicleInformation.paintName,
+    vehicleInformation.paintCode,
+    vehicleInformation.interior,
+    vehicleInformation.interiorCode,
+  ];
+
+  // Add the new row of data
+  XLSX.utils.sheet_add_aoa(sheet, [newRow], { origin: `A${rowCount + 1}` });
+
+  // Write the updated workbook to the file
+  XLSX.writeFile(workbook, filePath);
+};

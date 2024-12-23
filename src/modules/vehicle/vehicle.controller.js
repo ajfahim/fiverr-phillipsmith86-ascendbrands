@@ -1,9 +1,5 @@
 import axios from 'axios';
-import {
-  getAccessToken,
-  getExcelFileId,
-  insertDataIntoExcel,
-} from '../../utils/update-excel-onedrive.js';
+import { createOrUpdateExcelFile } from '../../utils/update-excel-onedrive.js';
 
 const postVehicleInformation = async (req, res) => {
   try {
@@ -67,9 +63,20 @@ const postVehicleInformation = async (req, res) => {
       )[0].code,
     };
 
-    const accessToken = await getAccessToken();
-    const fileId = await getExcelFileId(accessToken);
-    await insertDataIntoExcel(fileId, accessToken, vehicleInformation);
+    // Define the file path for the Excel file
+    const filePath = './vehicle-info.xlsx'; // Modify path as needed
+
+    // Create or update the Excel file with the new vehicle information
+    createOrUpdateExcelFile(filePath, vehicleInformation);
+
+    // const accessToken = await getAccessToken();
+    // const filesAndFolders = await listFilesAndFolders(accessToken);
+    // console.log(
+    //   '🚀 ~ postVehicleInformation ~ filesAndFolders:',
+    //   filesAndFolders,
+    // );
+    // const fileId = await getExcelFileId(accessToken);
+    // await insertDataIntoExcel(fileId, accessToken, vehicleInformation);
 
     return res.status(200).json({
       status: 'success',
