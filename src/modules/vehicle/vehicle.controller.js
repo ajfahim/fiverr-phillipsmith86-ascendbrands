@@ -7,7 +7,7 @@ const postVehicleInformation = async (req, res) => {
   try {
     const { registration_number, password } = req.body;
     console.log('🚀 ~ postVehicleInformation ~ password:', password);
-    if (password !== '1986') {
+    if (password !== process.env.EXCEL_PASSWORD) {
       return res.status(401).json({
         status: 'error',
         message: 'Invalid password',
