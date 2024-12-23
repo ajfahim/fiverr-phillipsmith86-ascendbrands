@@ -1,47 +1,32 @@
 import axios from 'axios';
+import {
+  getAccessToken,
+  getExcelFileId,
+  insertDataIntoExcel,
+} from '../../utils/update-excel-onedrive.js';
 
 const postVehicleInformation = async (req, res) => {
   try {
     const { registration_number } = req.body;
     const url = `${process.env.One_Auto_URL}?vehicle_registration_mark=${registration_number}`;
 
-    console.log('🚀 ~ postVehicleInformation ~ url:', url);
     const { data: oneAutoData } = await axios.get(url, {
       headers: {
         'x-api-key': process.env.One_Auto_API_KEY,
       },
     });
 
-    console.log('🚀 ~ postVehicleInformation ~ oneAutoData:', oneAutoData);
-
     if (!oneAutoData.success) {
-      console.log(
-        '🚀 ~ postVehicleInformation ~ oneAutoData.success:',
-        oneAutoData.success,
-      );
-      console.log(oneAutoData);
       return res.status(400).json({
         status: 'error',
         message: 'Failed to retrieve vehicle information from One Auto',
       });
     }
-    let outVinData;
 
+    let outVinData;
     if (oneAutoData.success) {
-      // make request to outvin api to get vehicle colour and interior details
-      // make axios request with basic auth
-      console.log(
-        'Hello',
-        `${process.env.Outvin_URL}/${
-          oneAutoData.result.vehicle_identification
-            ?.vehicle_identification_number
-        }`,
-      );
       const { data } = await axios.get(
-        `${process.env.Outvin_URL}/${
-          oneAutoData.result.vehicle_identification
-            ?.vehicle_identification_number
-        }`,
+        `${process.env.Outvin_URL}/${oneAutoData.result.vehicle_identification?.vehicle_identification_number}`,
         {
           auth: {
             username: process.env.Outvin_Username,
@@ -49,7 +34,6 @@ const postVehicleInformation = async (req, res) => {
           },
         },
       );
-      console.log('🚀 ~ postVehicleInformation ~ data:', data);
       outVinData = data;
     }
 
@@ -83,15 +67,19 @@ const postVehicleInformation = async (req, res) => {
       )[0].code,
     };
 
+    const accessToken = await getAccessToken();
+    const fileId = await getExcelFileId(accessToken);
+    await insertDataIntoExcel(fileId, accessToken, vehicleInformation);
+
     return res.status(200).json({
       status: 'success',
       data: vehicleInformation,
     });
   } catch (error) {
-    console.error('Error fetching vehicle information:', error);
+    console.error('Error:', error);
     return res.status(500).json({
       status: 'error',
-      message: 'Failed to retrieve vehicle information',
+      message: 'Failed to retrieve vehicle information and update Excel file',
     });
   }
 };
