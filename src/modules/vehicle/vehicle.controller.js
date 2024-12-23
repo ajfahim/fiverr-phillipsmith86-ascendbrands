@@ -2,7 +2,15 @@ import axios from 'axios';
 
 const postVehicleInformation = async (req, res) => {
   try {
-    const { registration_number } = req.body;
+    const { registration_number, password } = req.body;
+    console.log('🚀 ~ postVehicleInformation ~ password:', password);
+    if (password !== '1986') {
+      return res.status(401).json({
+        status: 'error',
+        message: 'Invalid password',
+      });
+    }
+
     const url = `${process.env.One_Auto_URL}?vehicle_registration_mark=${registration_number}`;
 
     console.log('🚀 ~ postVehicleInformation ~ url:', url);
