@@ -12,4 +12,5 @@ router.post(
   ),
   VehicleInformationController.postVehicleInformation,
 );
+router.get('/download', VehicleInformationController.downloadExcelFile);
 export const VehicleRoutes = router;

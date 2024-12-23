@@ -1,4 +1,7 @@
 import axios from 'axios';
+import fs from 'fs';
+import path from 'path';
+import { createOrUpdateExcelFile } from '../../utils/save-excel-file-to-filesystem.js';
 
 const postVehicleInformation = async (req, res) => {
   try {
@@ -13,43 +16,23 @@ const postVehicleInformation = async (req, res) => {
 
     const url = `${process.env.One_Auto_URL}?vehicle_registration_mark=${registration_number}`;
 
-    console.log('🚀 ~ postVehicleInformation ~ url:', url);
     const { data: oneAutoData } = await axios.get(url, {
       headers: {
         'x-api-key': process.env.One_Auto_API_KEY,
       },
     });
 
-    console.log('🚀 ~ postVehicleInformation ~ oneAutoData:', oneAutoData);
-
     if (!oneAutoData.success) {
-      console.log(
-        '🚀 ~ postVehicleInformation ~ oneAutoData.success:',
-        oneAutoData.success,
-      );
-      console.log(oneAutoData);
       return res.status(400).json({
         status: 'error',
         message: 'Failed to retrieve vehicle information from One Auto',
       });
     }
-    let outVinData;
 
+    let outVinData;
     if (oneAutoData.success) {
-      // make request to outvin api to get vehicle colour and interior details
-      // make axios request with basic auth
-      console.log(
-        'Hello',
-        `${process.env.Outvin_URL}/${
-          oneAutoData.result.vehicle_identification
-            ?.vehicle_identification_number
-        }`,
-      );
       const { data } = await axios.get(
-        `${process.env.Outvin_URL}/${
-          oneAutoData.result.vehicle_identification
-            ?.vehicle_identification_number
-        }`,
+        `${process.env.Outvin_URL}/${oneAutoData.result.vehicle_identification?.vehicle_identification_number}`,
         {
           auth: {
             username: process.env.Outvin_Username,
@@ -57,7 +40,6 @@ const postVehicleInformation = async (req, res) => {
           },
         },
       );
-      console.log('🚀 ~ postVehicleInformation ~ data:', data);
       outVinData = data;
     }
 
@@ -91,19 +73,67 @@ const postVehicleInformation = async (req, res) => {
       )[0].code,
     };
 
+    // Define the file path for the Excel file
+    const filePath = './vehicle-info.xlsx'; // Modify path as needed
+
+    // Create or update the Excel file with the new vehicle information
+    createOrUpdateExcelFile(filePath, vehicleInformation);
+
     return res.status(200).json({
       status: 'success',
       data: vehicleInformation,
     });
   } catch (error) {
-    console.error('Error fetching vehicle information:', error);
+    console.error('Error:', error);
     return res.status(500).json({
       status: 'error',
-      message: 'Failed to retrieve vehicle information',
+      message: 'Failed to retrieve vehicle information and update Excel file',
+    });
+  }
+};
+
+const downloadExcelFile = async (req, res) => {
+  try {
+    //get password from query params
+
+    const password = req.query.password;
+    if (password !== process.env.EXCEL_PASSWORD) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'Unauthorized',
+      });
+    }
+
+    const filePath = path.join(path.resolve(), 'vehicle-info.xlsx'); // Path where the Excel file is saved
+
+    // Check if the file exists
+    if (fs.existsSync(filePath)) {
+      // Set appropriate headers for file download
+      res.download(filePath, 'vehicle-info.xlsx', (err) => {
+        if (err) {
+          console.error('Error during file download:', err);
+          res.status(500).json({
+            status: 'error',
+            message: 'Failed to download the file.',
+          });
+        }
+      });
+    } else {
+      res.status(404).json({
+        status: 'error',
+        message: 'File not found',
+      });
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to handle file download',
     });
   }
 };
 
 export const VehicleInformationController = {
   postVehicleInformation,
+  downloadExcelFile,
 };
