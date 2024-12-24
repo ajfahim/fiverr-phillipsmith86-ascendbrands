@@ -6,7 +6,6 @@ import { createOrUpdateExcelFile } from '../../utils/save-excel-file-to-filesyst
 const postVehicleInformation = async (req, res) => {
   try {
     const { registration_number, password } = req.body;
-    console.log('🚀 ~ postVehicleInformation ~ password:', password);
     if (password !== process.env.EXCEL_PASSWORD) {
       return res.status(401).json({
         status: 'error',
@@ -21,6 +20,7 @@ const postVehicleInformation = async (req, res) => {
         'x-api-key': process.env.One_Auto_API_KEY,
       },
     });
+    console.log('🚀 ~ postVehicleInformation ~ oneAutoData:', oneAutoData);
 
     if (!oneAutoData.success) {
       return res.status(400).json({
@@ -44,6 +44,9 @@ const postVehicleInformation = async (req, res) => {
     }
 
     const vehicleInformation = {
+      VinNumber:
+        oneAutoData.result.vehicle_identification
+          ?.vehicle_identification_number || '',
       vehicleRegistrationMark:
         oneAutoData.result.vehicle_identification?.vehicle_registration_mark ||
         '',
