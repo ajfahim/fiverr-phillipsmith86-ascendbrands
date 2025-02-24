@@ -47,7 +47,7 @@ const postVehicleInformation = catchAsync(async (req, res) => {
           username: process.env.Outvin_Username,
           password: process.env.Outvin_Password,
         },
-        timeout: 5000,
+        timeout: 15000,
       });
       outVinData = data;
 
